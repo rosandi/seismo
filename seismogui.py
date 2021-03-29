@@ -9,15 +9,17 @@
 # -> run on desktop: desktop or size=WIDTHxHEIGHT
 #
 
-WSCREEN=320
-HSCREEN=240
+WSCREEN=1024
+HSCREEN=600
 WOFFS=0
 HOFFS=0
 WCVS=290      # canvas width
 HCVS=220      # canvas height
 
 import sys
-from tkinter import Tk, IntVar, StringVar, Canvas, ALL, Text, END, LEFT, W, INSERT,font
+import os
+import datetime
+from tkinter import Tk, IntVar, StringVar, Canvas, ALL, Text, END, LEFT, W, INSERT,font, filedialog
 from tkinter.ttk import *
 from time import sleep
 
@@ -38,8 +40,10 @@ welcome.update()
 
 comm='/dev/ttyACM0'
 speed=115200
+datadir='./data'
 
 ################### COMMAND LINE ARGUMENTS ############################
+
 for arg in sys.argv:
     if arg.find('comm=') == 0:
         comm=arg.replace('comm=','')
@@ -58,7 +62,16 @@ for arg in sys.argv:
         HSCREEN=600
         WCVS=int(0.9*WSCREEN)
         HCVS=int(0.9*HSCREEN)
+    if arg.find('data=') == 0:
+        datadir=arg.replace('data=','')
+		
 ##########################################################################
+
+err=os.system('mkdir -p {}'.format(datadir))
+
+if err:
+    print('failure in creating data directory: {}'.format(datadir))
+    exit(-1)
 
 import numpy as np
 
@@ -93,6 +106,8 @@ mingain=0
 maxgain=5
 chandirty=True
 limext=0.0
+datadir="./data"
+loc=(-6.914864, 107.608238)
 
 # allocate for 6 channels
 chlist=[1]
@@ -101,6 +116,7 @@ baseoffset=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 chgain=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 chcolor=['SteelBlue3','chartreuse2','firebrick3','DarkOrchid1','dark green','maroon']
 y=[None, None, None, None, None, None]
+x=None
 
 for arg in sys.argv:
     if arg.find('com=') == 0:
@@ -133,6 +149,7 @@ def getdevdata(e=None):
 
     # time in uSec -> convert to mSec
     # x=np.linspace(0,msrtime/1000.0,ndat)
+    
     x=msrtime
     
     for i in chlist:
@@ -178,6 +195,34 @@ def trigdevdata(e=None):
         for b in chlist:
             y[b][a]=vals[i]
             i+=1
+            
+def save():
+    now=datetime.datetime.now()
+    fname=datadir+'/%d%02d%02d%02d%02d%02d.dat'%(now.year,now.month,now.day,now.hour,now.minute,now.second)
+    print('saving data to ',fname)
+    
+    fdat=open(fname,'w')
+    ndat=len(y[0])
+    xt=np.linspace(0,x,ndat)
+    # header
+    
+    fdat.write('#$location {} {}\n'.format(loc[0],loc[1]))
+    fdat.write('#$time {}\n'.format(x))
+    fdat.write('#$ndata {}\n'.format(ndat))
+    fdat.write('#$channels ')
+    
+    for ch in chlist:
+        fdat.write(' %d'%(ch))
+    fdat.write('\n')
+    
+    # content
+    for a in range(ndat):
+        s='%0.5f'%(xt[a])
+        for b in chlist:
+            s='{} {}'.format(s,y[b][a])
+        fdat.write('{}\n'.format(s))
+    
+    fdat.close()
 
 def plot(data,xlim=(0,100),ylim=(-0.55,0.55),color='black'):
     scy=HCVS/(ylim[1]-ylim[0])
@@ -390,8 +435,8 @@ v_ckch=(IntVar(),IntVar(),IntVar(),IntVar(),IntVar(),IntVar())
 v_ckch[0].set(1)
 v_buff.set(1)
 
-########### PLOT AREA ######
-
+########### PLOT AREA ######   
+    
 def measure(e=None):
     global chandirty
     
@@ -404,6 +449,8 @@ def measure(e=None):
 
     if running:
         mw.after(10,measure)
+        
+    save()
         
 def trigger(e=None):
     global chandirty
@@ -421,6 +468,8 @@ def trigger(e=None):
 
     if running:
         mw.after(10,measure)
+    
+    save()
 
 def runmeasure(e=None):
     global running
@@ -433,15 +482,60 @@ def runmeasure(e=None):
         rpbutt.configure(style='r.TButton')
         running=False
 
+def openfile(e=None):
+    global lat,lon,x,y,chlist
+    
+    fname=filedialog.askopenfilename(initialdir = datadir, title = "Select a File",  filetypes = (("data files", "*.dat*"),("all files","*.*")))
+    ndat=0
+    fdat=open(fname,'r')
+    nline=0
+    
+    for sln in fdat:
+        
+        sln=sln.strip()
+        
+        if sln == '':
+            continue
+            
+        if sln.find('#$location') == 0:
+            s=sln.replace('#$location','').split()
+            lat=float(s[0])
+            lon=float(s[1])
+        if sln.find('#$time') == 0:
+            x=float(sln.replace('#$time',''))
+        if sln.find('#$ndata') == 0:
+            ndat=int(sln.replace('#$ndata',''))
+        if sln.find('#$channels') == 0:
+            chlist=[int(s) for s in sln.replace('#$channels','').split()]
+            for ch in chlist:
+                y[ch]=np.zeros(ndat)
+
+        if sln.find('#') == 0:
+            continue        
+        
+        s=[float(item) for item in sln.split()]
+    
+        x=s[0]
+        for i,ch in zip(range(len(chlist)),chlist):
+            y[ch][nline]=s[i+1]
+        
+        nline+=1
+    
+    updateplot()
+
+
 cvs=Canvas(plotarea, width=WCVS, height=HCVS, bg='white')
 cvs.grid(row=0,column=0,rowspan=3)
 
 wbtn=WSCREEN-WCVS
-rpbutt=Button(plotarea,text='R', style='r.TButton', command=runmeasure)
+
+rpbutt=Button(plotarea,text='RUN', style='r.TButton', command=runmeasure)
 rpbutt.place(x=WCVS,y=0,height=50,width=wbtn)
-Button(plotarea,text='M', command=measure).place(x=WCVS,y=54,height=50,width=wbtn)
-Button(plotarea,text='T', command=trigger).place(x=WCVS,y=107,height=50,width=wbtn)
-Button(plotarea,text='D', command=distplot).place(x=WCVS,y=160,height=50,width=wbtn)
+
+Button(plotarea,text='MEASURE', command=measure).place(x=WCVS,y=54,height=50,width=wbtn)
+Button(plotarea,text='TRIGER', command=trigger).place(x=WCVS,y=107,height=50,width=wbtn)
+Button(plotarea,text='DISTRIBUTE', command=distplot).place(x=WCVS,y=160,height=50,width=wbtn)
+Button(plotarea,text='FILE',command=openfile).place(x=WCVS,y=215,height=50,width=wbtn)
 
 ########### CONTROL AREA ######
 
