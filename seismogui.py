@@ -108,14 +108,16 @@ chandirty=True
 limext=0.0
 datadir="./data"
 loc=(-6.914864, 107.608238)
+nchannel=6
 
 # allocate for 6 channels
 chlist=[1]
-choffset=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-baseoffset=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-chgain=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-chcolor=['SteelBlue3','chartreuse2','firebrick3','DarkOrchid1','dark green','maroon']
-y=[None, None, None, None, None, None]
+choffset=[0.0]*nchannel
+baseoffset=[0.0]*nchannel
+chgain=[1.0]*nchannel
+cvs=[None]*nchannel
+chcolor=['SteelBlue3','chartreuse2','firebrick3','DarkOrchid1','dark green','maroon']*2
+y=[None]*nchannel
 x=None
 
 for arg in sys.argv:
@@ -224,15 +226,16 @@ def save():
     
     fdat.close()
 
-def plot(data,xlim=(0,100),ylim=(-0.55,0.55),color='black'):
-    scy=HCVS/(ylim[1]-ylim[0])
+def plot(cvs,data,xlim=(0,100),ylim=(-0.55,0.55),color='black'):
+    hh=HCVS/nchannel
+    scy=hh/(ylim[1]-ylim[0])
     mid=scy*(ylim[1]-ylim[0])/2
     scx=WCVS/(xlim[1]-xlim[0])
     x=np.linspace(0,WCVS,len(data))
     line=[]
     for a,b in zip(x,data):
         line.append(a)
-        line.append(HCVS-(b-ylim[0])*scy)
+        line.append(hh-(b-ylim[0])*scy)
         
     cvs.create_line(line, fill=color, width=2)
 
@@ -267,9 +270,9 @@ def updateplot(e=None):
     
     ylim=(ylim[0]-limext,ylim[1]+limext)
     
-    cvs.delete(ALL)
     for i in chlist:
-        plot(yplot[i],xlim=(0,x),ylim=ylim,color=chcolor[i])
+        cvs[i].delete(ALL)
+        plot(cvs[i],yplot[i],xlim=(0,x),ylim=ylim,color=chcolor[i])
 
 ##### CALLBACKS #####
 
@@ -367,21 +370,6 @@ def channelchg(e=None):
         
     chandirty=True
     print(deviceCommand("chn "+str(achan)))
-        
-def distplot(e=None):
-    # FIXME! all the scalles must be set to 50%
-    nc=len(chlist)
-    if nc<=1:
-        return
-    
-    h=0.2*nc/2
-    oi=0
-    for c in chlist:
-        choffset[c]=oi*0.1+0.1-h
-        oi+=1
-        
-    updateplot()
-
 
 def initialize():
     deviceInit(comm,speed)
@@ -449,14 +437,14 @@ def measure(e=None):
 
     if running:
         mw.after(10,measure)
-        
-    save()
-        
+    elif e is None:
+        save()
+
 def trigger(e=None):
     global chandirty
     
-    cvs.delete(ALL)
-    cvs.create_text(140,100,text='Waiting: TRIGGER signal..', font=('Helvetica',16))
+    cvs[0].delete(ALL)
+    cvs[0].create_text(WCVS/2-70,40,text='Waiting: TRIGGER signal..', font=('Helvetica',16))
     mw.update()
     
     trigdevdata()
@@ -484,6 +472,7 @@ def runmeasure(e=None):
 
 def openfile(e=None):
     global lat,lon,x,y,chlist
+    global chandirty
     
     fname=filedialog.askopenfilename(initialdir = datadir, title = "Select a File",  filetypes = (("data files", "*.dat*"),("all files","*.*")))
     ndat=0
@@ -520,12 +509,13 @@ def openfile(e=None):
             y[ch][nline]=s[i+1]
         
         nline+=1
-    
+        
+    chandirty=True
     updateplot()
 
-
-cvs=Canvas(plotarea, width=WCVS, height=HCVS, bg='white')
-cvs.grid(row=0,column=0,rowspan=3)
+for c in range(nchannel):
+    cvs[c]=Canvas(plotarea, width=WCVS, height=HCVS/nchannel, bg='white')
+    cvs[c].grid(row=c,column=0)
 
 wbtn=WSCREEN-WCVS
 
@@ -534,8 +524,7 @@ rpbutt.place(x=WCVS,y=0,height=50,width=wbtn)
 
 Button(plotarea,text='MEASURE', command=measure).place(x=WCVS,y=54,height=50,width=wbtn)
 Button(plotarea,text='TRIGER', command=trigger).place(x=WCVS,y=107,height=50,width=wbtn)
-Button(plotarea,text='DISTRIBUTE', command=distplot).place(x=WCVS,y=160,height=50,width=wbtn)
-Button(plotarea,text='FILE',command=openfile).place(x=WCVS,y=215,height=50,width=wbtn)
+Button(plotarea,text='FILE', command=openfile).place(x=WCVS,y=160,height=50,width=wbtn)
 
 ########### CONTROL AREA ######
 
@@ -669,13 +658,13 @@ cmdbox.bind('<Return>',dosend)
 def tabchanges(e):
     if mainTab.tab('current')['text']=='plot':
         if chandirty:
-            measure()
+            measure(False)
         else:
             updateplot()
     else:
         if running:
             # deactivate run mode
-            runmeasure()
+            runmeasure(False)
 
 mw.bind('<<NotebookTabChanged>>', tabchanges)
 
