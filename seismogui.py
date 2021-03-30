@@ -13,8 +13,6 @@ WSCREEN=1024
 HSCREEN=600
 WOFFS=0
 HOFFS=0
-WCVS=290      # canvas width
-HCVS=220      # canvas height
 
 import sys
 import os
@@ -52,20 +50,19 @@ for arg in sys.argv:
     if arg.find('size=') == 0:
         WSCREEN=int(arg.replace('size=','').split('x')[0])
         HSCREEN=int(arg.replace('size=','').split('x')[1])
-        WCVS=int(0.9*WSCREEN)
-        HCVS=int(0.9*HSCREEN)
     if arg.find('offset=') == 0:
         WOFFS=int(arg.replace('offset=','').replace('+',' ').split()[0])
         HOFFS=int(arg.replace('offset=','').replace('+',' ').split()[1])
     if arg.find('desktop') == 0:
         WSCREEN=800
         HSCREEN=600
-        WCVS=int(0.9*WSCREEN)
-        HCVS=int(0.9*HSCREEN)
     if arg.find('data=') == 0:
         datadir=arg.replace('data=','')
 		
 ##########################################################################
+
+WCVS=int(0.9*WSCREEN)
+HCVS=int(0.9*HSCREEN)
 
 err=os.system('mkdir -p {}'.format(datadir))
 
@@ -202,37 +199,43 @@ def save():
     now=datetime.datetime.now()
     fname=datadir+'/%d%02d%02d%02d%02d%02d.dat'%(now.year,now.month,now.day,now.hour,now.minute,now.second)
     print('saving data to ',fname)
-    
-    fdat=open(fname,'w')
-    ndat=len(y[0])
-    xt=np.linspace(0,x,ndat)
-    # header
-    
-    fdat.write('#$location {} {}\n'.format(loc[0],loc[1]))
-    fdat.write('#$time {}\n'.format(x))
-    fdat.write('#$ndata {}\n'.format(ndat))
-    fdat.write('#$channels ')
-    
-    for ch in chlist:
-        fdat.write(' %d'%(ch))
-    fdat.write('\n')
-    
-    # content
-    for a in range(ndat):
-        s='%0.5f'%(xt[a])
-        for b in chlist:
-            s='{} {}'.format(s,y[b][a])
-        fdat.write('{}\n'.format(s))
-    
-    fdat.close()
+    try:
+        fdat=open(fname,'w')
+        ndat=len(y[0])
+        xt=np.linspace(0,x,ndat)
+        # header
+        
+        fdat.write('#$location {} {}\n'.format(loc[0],loc[1]))
+        fdat.write('#$time {}\n'.format(x))
+        fdat.write('#$ndata {}\n'.format(ndat))
+        fdat.write('#$channels ')
+        
+        for ch in chlist:
+            fdat.write(' %d'%(ch))
+        fdat.write('\n')
+        
+        # content
+        for a in range(ndat):
+            s='%0.5f'%(xt[a])
+            for b in chlist:
+                s='{} {}'.format(s,y[b][a])
+            fdat.write('{}\n'.format(s))
+        
+        fdat.close()
+    except:
+        print('error writting file')
 
 def plot(cvs,data,xlim=(0,100),ylim=(-0.55,0.55),color='black'):
-    hh=HCVS/nchannel
+    hh=int(cvs.cget('height'))
+    ww=int(cvs.cget('width'))
+    
     scy=hh/(ylim[1]-ylim[0])
     mid=scy*(ylim[1]-ylim[0])/2
-    scx=WCVS/(xlim[1]-xlim[0])
-    x=np.linspace(0,WCVS,len(data))
+    
+    scx=ww/(xlim[1]-xlim[0])
+    x=np.linspace(0,ww,len(data))
     line=[]
+
     for a,b in zip(x,data):
         line.append(a)
         line.append(hh-(b-ylim[0])*scy)
@@ -269,10 +272,11 @@ def updateplot(e=None):
             ylim=(mi,ma)
     
     ylim=(ylim[0]-limext,ylim[1]+limext)
-    
+        
     for i in chlist:
         cvs[i].delete(ALL)
         plot(cvs[i],yplot[i],xlim=(0,x),ylim=ylim,color=chcolor[i])
+        cvs[i].create_text(20,10,text='ch%d'%(i+1), font=('Helvetica',10))
 
 ##### CALLBACKS #####
 
@@ -376,7 +380,7 @@ def initialize():
     print("initialization....")
     print(deviceCommand("dt 1"))
     print(deviceCommand("avg 10"))
-    print(deviceCommand("chn 1"))
+    print(deviceCommand("chn {}".format(1+2+4+8+16+32)))
 
 
 ### initialization
@@ -420,7 +424,10 @@ mainTab.pack(expand=1, fill="both")
 v_filt=IntVar()
 v_buff=IntVar()
 v_ckch=(IntVar(),IntVar(),IntVar(),IntVar(),IntVar(),IntVar())
-v_ckch[0].set(1)
+
+for i,c in zip(range(6),(1,2,4,8,16,32)):
+    v_ckch[i].set(c)
+
 v_buff.set(1)
 
 ########### PLOT AREA ######   
@@ -475,42 +482,47 @@ def openfile(e=None):
     global chandirty
     
     fname=filedialog.askopenfilename(initialdir = datadir, title = "Select a File",  filetypes = (("data files", "*.dat*"),("all files","*.*")))
+
     ndat=0
-    fdat=open(fname,'r')
     nline=0
     
-    for sln in fdat:
-        
-        sln=sln.strip()
-        
-        if sln == '':
-            continue
+    try: 
+        fdat=open(fname,'r')
+        for sln in fdat:
             
-        if sln.find('#$location') == 0:
-            s=sln.replace('#$location','').split()
-            lat=float(s[0])
-            lon=float(s[1])
-        if sln.find('#$time') == 0:
-            x=float(sln.replace('#$time',''))
-        if sln.find('#$ndata') == 0:
-            ndat=int(sln.replace('#$ndata',''))
-        if sln.find('#$channels') == 0:
-            chlist=[int(s) for s in sln.replace('#$channels','').split()]
-            for ch in chlist:
-                y[ch]=np.zeros(ndat)
+            sln=sln.strip()
+            
+            if sln == '':
+                continue
+                
+            if sln.find('#$location') == 0:
+                s=sln.replace('#$location','').split()
+                lat=float(s[0])
+                lon=float(s[1])
+            if sln.find('#$time') == 0:
+                x=float(sln.replace('#$time',''))
+            if sln.find('#$ndata') == 0:
+                ndat=int(sln.replace('#$ndata',''))
+            if sln.find('#$channels') == 0:
+                chlist=[int(s) for s in sln.replace('#$channels','').split()]
+                for ch in chlist:
+                    y[ch]=np.zeros(ndat)
 
-        if sln.find('#') == 0:
-            continue        
+            if sln.find('#') == 0:
+                continue        
+            
+            s=[float(item) for item in sln.split()]
         
-        s=[float(item) for item in sln.split()]
-    
-        x=s[0]
-        for i,ch in zip(range(len(chlist)),chlist):
-            y[ch][nline]=s[i+1]
-        
-        nline+=1
-        
-    updateplot()
+            x=s[0]
+            for i,ch in zip(range(len(chlist)),chlist):
+                y[ch][nline]=s[i+1]
+            
+            nline+=1
+            
+        updateplot()
+    except:
+        if fname:
+            print('file read error: ', fname)
 
 for c in range(nchannel):
     cvs[c]=Canvas(plotarea, width=WCVS, height=HCVS/nchannel, bg='white')

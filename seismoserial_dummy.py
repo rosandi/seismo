@@ -1,6 +1,20 @@
 from time import sleep
+from random import random
+from math import pi,sin,exp
 
 chn=1
+
+def createsignal(nch):
+    nd=500
+    f=20.0
+    v=[]
+    theta=[nd*random() for xx in range(nch)]
+    
+    for i in range(nd):
+        for th in theta:
+            a=2.0*pi*f*i/nd
+            v.append(sin(a)*exp(-(0.001*(i-th)**2)))
+    return v
 
 def channelnum(cmask):
     nchan=0
@@ -21,15 +35,11 @@ def deviceCommand(scmd):
     nchan=channelnum(chn)
     
     if scmd.find('msr')==0:
-        a=[0]*10*nchan+[-0.05]*10*nchan
-        b=[0]*10*nchan+[0.05]*10*nchan
-        return 1000, a+b, chn
+        return 1000, createsignal(nchan), chn
     elif scmd.find('trig')==0:
         sleep(5)
         print("trigger simulated")
-        a=[0]*10*nchan+[-0.05]*10*nchan
-        b=[0]*10*nchan+[0.05]*10*nchan
-        return 1000, a+b, chn
+        return 1000, createsignal(nchan), chn
         
     elif scmd.find('chn')==0:
         chn=int(scmd.split()[1])
