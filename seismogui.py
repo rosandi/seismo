@@ -61,7 +61,7 @@ for arg in sys.argv:
 		
 ##########################################################################
 
-WCVS=int(0.9*WSCREEN)
+WCVS=int(0.8*WSCREEN)
 HCVS=int(0.9*HSCREEN)
 
 err=os.system('mkdir -p {}'.format(datadir))
@@ -80,7 +80,13 @@ welcome.update()
 if comm=='null':
     from seismoserial_dummy import deviceInit,deviceClose,deviceCommand,directMeasure,clearQueue
 else:
-    from seismoserial import deviceInit,deviceClose,deviceCommand,directMeasure,clearQueue
+    try:
+        from seismoserial import deviceInit,deviceClose,deviceCommand,directMeasure,clearQueue
+    except:
+        print('Can not find seismo device. Using dummy device')
+        from seismoserial_dummy import deviceInit,deviceClose,deviceCommand,directMeasure,clearQueue
+
+
 filtstrength=0.25
 
 try:
@@ -536,6 +542,31 @@ rpbutt.place(x=WCVS,y=0,height=50,width=wbtn)
 Button(plotarea,text='MEASURE', command=measure).place(x=WCVS,y=54,height=50,width=wbtn)
 Button(plotarea,text='TRIGER', command=trigger).place(x=WCVS,y=107,height=50,width=wbtn)
 Button(plotarea,text='FILE', command=openfile).place(x=WCVS,y=160,height=50,width=wbtn)
+
+pointpos=Label(plotarea,text='cursor: 0 ms')
+pointpos.place(x=WCVS+10,y=220,height=50,width=wbtn)
+
+def mousepos(e):
+    global mouseln,x
+    ww=int(e.widget['width'])
+    hh=int(e.widget['height'])
+    pointpos['text']= 'cursor: %0.3f ms'%(x*e.x/ww)
+    e.widget.coords(mouseln,e.x,0, e.x, hh)
+
+def mouseenter(e):
+    global mouseln
+    hh=int(e.widget.cget('height'))
+    mouseln=e.widget.create_line(e.x,0, e.x, hh)       
+
+def mouseleave(e):
+    global mouseln
+    e.widget.delete(mouseln)       
+
+for c in cvs:
+    c.bind('<Motion>', mousepos)
+    c.bind('<Enter>', mouseenter)
+    c.bind('<Leave>', mouseleave)
+
 
 ########### CONTROL AREA ######
 
