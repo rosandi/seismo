@@ -510,7 +510,6 @@ def openfile(e=None):
         
         nline+=1
         
-    chandirty=True
     updateplot()
 
 for c in range(nchannel):
@@ -656,9 +655,12 @@ cmdbox.bind('<Return>',dosend)
 ### Events binding ###
 
 def tabchanges(e):
+    global chandirty
+    
     if mainTab.tab('current')['text']=='plot':
         if chandirty:
             measure(False)
+            chandirty=False
         else:
             updateplot()
     else:
