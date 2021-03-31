@@ -17,7 +17,8 @@ HOFFS=0
 import sys
 import os
 import datetime
-from tkinter import Tk, IntVar, StringVar, Canvas, ALL, Text, END, LEFT, W, INSERT,font, filedialog
+from tkinter import Tk, IntVar, StringVar, Canvas, ALL, Text, END, LEFT, W, INSERT,font
+from tkinter import filedialog
 from tkinter.ttk import *
 from time import sleep
 
@@ -436,7 +437,7 @@ for i,c in zip(range(6),(1,2,4,8,16,32)):
 
 v_buff.set(1)
 
-########### PLOT AREA ######   
+########### PLOT AREA ##########   
     
 def measure(e=None):
     global chandirty
@@ -530,21 +531,8 @@ def openfile(e=None):
         if fname:
             print('file read error: ', fname)
 
-for c in range(nchannel):
-    cvs[c]=Canvas(plotarea, width=WCVS, height=HCVS/nchannel, bg='white')
-    cvs[c].grid(row=c,column=0)
 
-wbtn=WSCREEN-WCVS
-
-rpbutt=Button(plotarea,text='RUN', style='r.TButton', command=runmeasure)
-rpbutt.place(x=WCVS,y=0,height=50,width=wbtn)
-
-Button(plotarea,text='MEASURE', command=measure).place(x=WCVS,y=54,height=50,width=wbtn)
-Button(plotarea,text='TRIGER', command=trigger).place(x=WCVS,y=107,height=50,width=wbtn)
-Button(plotarea,text='FILE', command=openfile).place(x=WCVS,y=160,height=50,width=wbtn)
-
-pointpos=Label(plotarea,text='cursor: 0 ms')
-pointpos.place(x=WCVS+10,y=220,height=50,width=wbtn)
+#---- PLOT CANVAS ----
 
 def mousepos(e):
     global mouseln,x
@@ -560,13 +548,61 @@ def mouseenter(e):
 
 def mouseleave(e):
     global mouseln
-    e.widget.delete(mouseln)       
+    e.widget.delete(mouseln)
+    
+def mousepick(e,c):
+    ww=int(e.widget['width'])
+    pickbox.insert(END,'%d %0.3f\n'%(c, x*e.x/ww))
+    
+for c in range(nchannel):
+    cvs[c]=Canvas(plotarea, width=WCVS, height=(HCVS-20)/nchannel, bg='white')
+    cvs[c].grid(row=c,column=0)
 
-for c in cvs:
-    c.bind('<Motion>', mousepos)
-    c.bind('<Enter>', mouseenter)
-    c.bind('<Leave>', mouseleave)
+tlow=Label(plotarea, text='0 ms')
+thi=Label(plotarea, text='1000 ms')
 
+tlow.place(x=5,y=HCVS-10)
+thi.place(x=WCVS-60,y=HCVS-10)
+
+for c in range(len(cvs)):
+    cvs[c].bind('<Motion>', mousepos)
+    cvs[c].bind('<Enter>', mouseenter)
+    cvs[c].bind('<Leave>', mouseleave)
+    cvs[c].bind('<Button-1>', lambda event, chn=c: mousepick(event, chn))
+
+wbtn=WSCREEN-WCVS
+
+rpbutt=Button(plotarea,text='RUN', style='r.TButton', command=runmeasure)
+rpbutt.place(x=WCVS,y=0,height=50,width=wbtn)
+
+Button(plotarea,text='MEASURE', command=measure).place(x=WCVS,y=54,height=50,width=wbtn)
+Button(plotarea,text='TRIGER', command=trigger).place(x=WCVS,y=107,height=50,width=wbtn)
+Button(plotarea,text='FILE', command=openfile).place(x=WCVS,y=160,height=50,width=wbtn)
+
+infoarea=Frame(plotarea)
+infoarea.place(x=WCVS+10,y=220,width=wbtn)
+
+pointpos=Label(infoarea,text='cursor: 0 ms')
+pointpos.grid(column=0,row=0,columnspan=2)
+
+Label(infoarea, text='pick times').grid(column=0,row=2,columnspan=2)
+pickbox=Text(infoarea,width=22,height=12)
+pickbox.grid(column=0, row=3, columnspan=2)
+pickbox.insert(END,'#channel time_ms\n')
+
+def savepicks(e=None):
+
+    fname=filedialog.asksaveasfile(initialdir=datadir, title="File name", filetypes=(("text files", "*.txt"),))    
+    try:
+        print('writing file: ', fname.name)
+        fl=open(fname.name, 'w')
+        fl.write(pickbox.get("1.0", END))
+        fl.close()
+    except:
+        print('error writing file')
+
+Button(infoarea, text='CLEAR', command=lambda: pickbox.delete(1.0,END)).grid(column=0, row=4)
+Button(infoarea, text='SAVE', command=savepicks).grid(column=1, row=4)
 
 ########### CONTROL AREA ######
 
@@ -652,7 +688,8 @@ Scale(axisctr, length=100, from_=0, to=0.2, value=0, command=plotlimit).grid(row
 Button(ctrarea,text='OK',style='ok.TButton',command=okctr).place(x=235,y=170,width=30,height=30)
 Button(ctrarea,text='X',style='off.TButton',command=destroyme).place(x=270,y=170,width=30,height=30)
 
-#### SETTINGS AREA ######
+
+######### SETTINGS AREA ###########
 
 def setdt(e=None):
     v_dt.config(text='delta %4d'%(int(float(e))))
@@ -675,6 +712,8 @@ v_av.grid(row=1,column=0)
 s_av.grid(row=1,column=1)
 
 Button(setarea,text='Apply',command=setapply).grid(row=2,column=0,columnspan=2,pady=20)
+
+
 
 ###### COMMAND AREA #######
 
