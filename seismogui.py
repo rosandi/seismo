@@ -504,11 +504,11 @@ def openfile(e=None):
 
 ##### PLOT CANVAS ####
 
-def mousepos(e):
+def mousepos(e,c):
     global mouseln,x
     ww=int(e.widget['width'])
     hh=int(e.widget['height'])
-    pointpos['text']= 'cursor: %0.3f ms'%(x*e.x/ww)
+    pointpos['text']= 'ch(%d) %0.3f ms'%(c, x*e.x/ww)
     e.widget.coords(mouseln,e.x,0, e.x, hh)
 
 def mouseenter(e):
@@ -524,6 +524,10 @@ def mousepick(e,c):
     ww=int(e.widget['width'])
     pickbox.insert(INSERT,'%d %0.3f\n'%(c, x*e.x/ww))
 
+def btnpick():
+    s=pointpos['text'].replace('ch(','').replace(')','').replace(' ms','\n')
+    pickbox.insert(INSERT,s)
+
 #def mousezoom(e,c):
 #    print('double click on ',c)
     
@@ -538,7 +542,7 @@ tlow.place(x=5,y=HCVS)
 thi.place(x=WCVS-60,y=HCVS)
 
 for c in range(len(cvs)):
-    cvs[c].bind('<Motion>', mousepos)
+    cvs[c].bind('<Motion>', lambda e,c=c: mousepos(e,c))
     cvs[c].bind('<Enter>', mouseenter)
     cvs[c].bind('<Leave>', mouseleave)
     cvs[c].bind('<Double-Button-1>', lambda event, chn=c: mousepick(event, chn))
@@ -555,11 +559,11 @@ Button(plotarea,text='MEASURE', command=measure).place(x=WCVS,y=54,height=50,wid
 Button(plotarea,text='TRIGER', command=trigger).place(x=WCVS,y=107,height=50,width=wbtn)
 Button(plotarea,text='FILE', command=openfile).place(x=WCVS,y=160,height=50,width=wbtn)
 
-infoarea=Frame(plotarea)
-infoarea.place(x=WCVS+10,y=220,width=wbtn)
+pointpos=Button(plotarea,text='ch(0) 0 ms',command=btnpick)
+pointpos.place(x=WCVS,y=220,width=wbtn)
 
-pointpos=Label(infoarea,text='cursor: 0 ms')
-pointpos.grid(column=0,row=0,columnspan=2)
+infoarea=Frame(plotarea)
+infoarea.place(x=WCVS+10,y=250,width=wbtn)
 
 Label(infoarea, text='pick times').grid(column=0,row=2,columnspan=2)
 pickbox=Text(infoarea,width=22,height=12)
