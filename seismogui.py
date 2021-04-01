@@ -17,9 +17,11 @@ HOFFS=0
 import sys
 import os
 import datetime
-from tkinter import Tk, IntVar, StringVar, Canvas, ALL, Text, END, LEFT, W, INSERT,font
+from tkinter import Tk, IntVar, StringVar, Canvas, Text, font
+from tkinter import ALL, END, LEFT, W, INSERT
 from tkinter import filedialog
-from tkinter.ttk import *
+from tkinter.ttk import Scale, Button, Label, Style, Notebook, Frame
+from tkinter.ttk import Checkbutton, Entry
 from time import sleep
 
 
@@ -300,42 +302,6 @@ def destroyme(e=None):
     print('program exit')
     mw.destroy()
 
-def offch1(e=None):
-    global choffset
-    choffset[0]=minofs+float(e)*(maxofs-minofs)/100.0
-    v_og1.config(text='%0.1f/%0.1f'%(choffset[0],chgain[0]))
-    updateplot()
-
-def offch2(e=None):
-    global choffset
-    choffset[1]=minofs+float(e)*(maxofs-minofs)/100.0
-    v_og2.config(text='%0.1f/%0.1f'%(choffset[1],chgain[1]))
-    updateplot()
-
-def offch3(e=None):
-    global choffset
-    choffset[2]=minofs+float(e)*(maxofs-minofs)/100.0
-    v_og3.config(text='%0.1f/%0.1f'%(choffset[2],chgain[2]))
-    updateplot()
-
-def offch4(e=None):
-    global choffset
-    choffset[3]=minofs+float(e)*(maxofs-minofs)/100.0
-    v_og4.config(text='%0.1f/%0.1f'%(choffset[3],chgain[3]))
-    updateplot()
-
-def offch5(e=None):
-    global choffset
-    choffset[4]=minofs+float(e)*(maxofs-minofs)/100.0
-    v_og5.config(text='%0.1f/%0.1f'%(choffset[4],chgain[4]))
-    updateplot()
-
-def offch6(e=None):
-    global choffset
-    choffset[5]=minofs+float(e)*(maxofs-minofs)/100.0
-    v_og6.config(text='%0.1f/%0.1f'%(choffset[5],chgain[5]))
-    updateplot()
-
 ## gain
 def gainch1(e=None):
     global chgain
@@ -407,12 +373,14 @@ welcome.destroy()
 mw=Tk()
 mw.title('Voltage Measurement')
 
+### STYLES ######
 sty=Style()
 sty.map('r.TButton',background=[('active','red'),('!disabled','red4')])
 sty.map('p.TButton',background=[('active','green'),('!disabled','dark green')])
 sty.map('ok.TButton',background=[('active','green'),('!disabled','dark green')])
 sty.map('off.TButton',background=[('active','red'),('!disabled','red4')])
 sty.configure('res.TLabel',background='white')
+sty.configure('TScale',background='blue')
 
 mainTab=Notebook(mw)
 
@@ -437,8 +405,10 @@ for i,c in zip(range(6),(1,2,4,8,16,32)):
 
 v_buff.set(1)
 
-########### PLOT AREA ##########   
-    
+####################################################################
+############# PLOT AREA ############################################
+####################################################################
+  
 def measure(e=None):
     global chandirty
     
@@ -532,7 +502,7 @@ def openfile(e=None):
             print('file read error: ', fname)
 
 
-#---- PLOT CANVAS ----
+##### PLOT CANVAS ####
 
 def mousepos(e):
     global mouseln,x
@@ -552,7 +522,7 @@ def mouseleave(e):
     
 def mousepick(e,c):
     ww=int(e.widget['width'])
-    pickbox.insert(END,'%d %0.3f\n'%(c, x*e.x/ww))
+    pickbox.insert(INSERT,'%d %0.3f\n'%(c, x*e.x/ww))
     
 for c in range(nchannel):
     cvs[c]=Canvas(plotarea, width=WCVS, height=(HCVS-20)/nchannel, bg='white')
@@ -561,14 +531,16 @@ for c in range(nchannel):
 tlow=Label(plotarea, text='0 ms')
 thi=Label(plotarea, text='1000 ms')
 
-tlow.place(x=5,y=HCVS-10)
-thi.place(x=WCVS-60,y=HCVS-10)
+tlow.place(x=5,y=HCVS)
+thi.place(x=WCVS-60,y=HCVS)
 
 for c in range(len(cvs)):
     cvs[c].bind('<Motion>', mousepos)
     cvs[c].bind('<Enter>', mouseenter)
     cvs[c].bind('<Leave>', mouseleave)
     cvs[c].bind('<Button-1>', lambda event, chn=c: mousepick(event, chn))
+
+#### BUTTONS ####
 
 wbtn=WSCREEN-WCVS
 
@@ -604,18 +576,63 @@ def savepicks(e=None):
 Button(infoarea, text='CLEAR', command=lambda: pickbox.delete(1.0,END)).grid(column=0, row=4)
 Button(infoarea, text='SAVE', command=savepicks).grid(column=1, row=4)
 
-########### CONTROL AREA ######
+####################################################################
+############### CONTROL AREA #######################################
+####################################################################
+
+def offch1(e=None):
+    global choffset
+    choffset[0]=minofs+float(e)*(maxofs-minofs)/100.0
+    v_og1.config(text='%0.1f/%0.1f'%(choffset[0],chgain[0]))
+    updateplot()
+
+def offch2(e=None):
+    global choffset
+    choffset[1]=minofs+float(e)*(maxofs-minofs)/100.0
+    v_og2.config(text='%0.1f/%0.1f'%(choffset[1],chgain[1]))
+    updateplot()
+
+def offch3(e=None):
+    global choffset
+    choffset[2]=minofs+float(e)*(maxofs-minofs)/100.0
+    v_og3.config(text='%0.1f/%0.1f'%(choffset[2],chgain[2]))
+    updateplot()
+
+def offch4(e=None):
+    global choffset
+    choffset[3]=minofs+float(e)*(maxofs-minofs)/100.0
+    v_og4.config(text='%0.1f/%0.1f'%(choffset[3],chgain[3]))
+    updateplot()
+
+def offch5(e=None):
+    global choffset
+    choffset[4]=minofs+float(e)*(maxofs-minofs)/100.0
+    v_og5.config(text='%0.1f/%0.1f'%(choffset[4],chgain[4]))
+    updateplot()
+
+def offch6(e=None):
+    global choffset
+    choffset[5]=minofs+float(e)*(maxofs-minofs)/100.0
+    v_og6.config(text='%0.1f/%0.1f'%(choffset[5],chgain[5]))
+    updateplot()
 
 offgainctr=Frame(ctrarea)
 chanctr=Frame(ctrarea)
 axisctr=Frame(ctrarea)
 
-offgainctr.grid(row=0,column=0,sticky='w')
-chanctr.grid(row=1,column=0,sticky='w')
-axisctr.grid(row=2,column=0,sticky='w')
+slen=300
+pady=10
 
-Label(offgainctr, text='Offset').grid(column=1,row=0)
-Label(offgainctr, text='Gain').grid(column=2,row=0)
+#offgainctr.grid(row=0,column=0)
+#chanctr.grid(row=1,column=0)
+#axisctr.grid(row=2,column=0)
+
+offgainctr.pack(pady=20)
+chanctr.pack(pady=20)
+axisctr.pack(pady=20)
+
+Label(offgainctr, text='Offset').grid(column=1,row=0, pady=pady)
+Label(offgainctr, text='Gain').grid(column=2,row=0, pady=pady)
 Label(offgainctr, text='CH1 ').grid(column=0,row=1)
 Label(offgainctr, text='CH2 ').grid(column=0,row=2)
 Label(offgainctr, text='CH3 ').grid(column=0,row=3)
@@ -630,19 +647,20 @@ v_og4=Label(offgainctr, text='0.0/1.0',width=8)
 v_og5=Label(offgainctr, text='0.0/1.0',width=8)
 v_og6=Label(offgainctr, text='0.0/1.0',width=8)
 
-Scale(offgainctr, length=100, from_=0, to=100, value=50, command=offch1).grid(column=1,row=1,padx=2)
-Scale(offgainctr, length=100, from_=0, to=100, value=50, command=offch2).grid(column=1,row=2,padx=2)
-Scale(offgainctr, length=100, from_=0, to=100, value=50, command=offch3).grid(column=1,row=3,padx=2)
-Scale(offgainctr, length=100, from_=0, to=100, value=50, command=offch4).grid(column=1,row=4,padx=2)
-Scale(offgainctr, length=100, from_=0, to=100, value=50, command=offch5).grid(column=1,row=5,padx=2)
-Scale(offgainctr, length=100, from_=0, to=100, value=50, command=offch6).grid(column=1,row=6,padx=2)
 
-Scale(offgainctr, length=100, from_=0, to=100, value=20, command=gainch1).grid(column=2,row=1,padx=2)
-Scale(offgainctr, length=100, from_=0, to=100, value=20, command=gainch2).grid(column=2,row=2,padx=2)
-Scale(offgainctr, length=100, from_=0, to=100, value=20, command=gainch3).grid(column=2,row=3,padx=2)
-Scale(offgainctr, length=100, from_=0, to=100, value=20, command=gainch4).grid(column=2,row=4,padx=2)
-Scale(offgainctr, length=100, from_=0, to=100, value=20, command=gainch5).grid(column=2,row=5,padx=2)
-Scale(offgainctr, length=100, from_=0, to=100, value=20, command=gainch6).grid(column=2,row=6,padx=2)
+Scale(offgainctr, length=slen, from_=0, to=100, value=50, command=offch1).grid(column=1,row=1,padx=2, pady=pady)
+Scale(offgainctr, length=slen, from_=0, to=100, value=50, command=offch2).grid(column=1,row=2,padx=2, pady=pady)
+Scale(offgainctr, length=slen, from_=0, to=100, value=50, command=offch3).grid(column=1,row=3,padx=2, pady=pady)
+Scale(offgainctr, length=slen, from_=0, to=100, value=50, command=offch4).grid(column=1,row=4,padx=2, pady=pady)
+Scale(offgainctr, length=slen, from_=0, to=100, value=50, command=offch5).grid(column=1,row=5,padx=2, pady=pady)
+Scale(offgainctr, length=slen, from_=0, to=100, value=50, command=offch6).grid(column=1,row=6,padx=2, pady=pady)
+
+Scale(offgainctr, length=slen, from_=0, to=100, value=20, command=gainch1).grid(column=2,row=1,padx=2, pady=pady)
+Scale(offgainctr, length=slen, from_=0, to=100, value=20, command=gainch2).grid(column=2,row=2,padx=2, pady=pady)
+Scale(offgainctr, length=slen, from_=0, to=100, value=20, command=gainch3).grid(column=2,row=3,padx=2, pady=pady)
+Scale(offgainctr, length=slen, from_=0, to=100, value=20, command=gainch4).grid(column=2,row=4,padx=2, pady=pady)
+Scale(offgainctr, length=slen, from_=0, to=100, value=20, command=gainch5).grid(column=2,row=5,padx=2, pady=pady)
+Scale(offgainctr, length=slen, from_=0, to=100, value=20, command=gainch6).grid(column=2,row=6,padx=2, pady=pady)
 
 v_og1.grid(column=3,row=1,padx=10,sticky='e')
 v_og2.grid(column=3,row=2,padx=10)
@@ -652,7 +670,7 @@ v_og5.grid(column=3,row=5,padx=10)
 v_og6.grid(column=3,row=6,padx=10)
 
 ## channel select
-lbck=Label(chanctr,text='Channels').grid(column=0,row=0,columnspan=6)
+lbck=Label(chanctr,text='Channels').grid(column=0,row=0,columnspan=6,sticky='w')
 Checkbutton(chanctr,text='CH1',variable=v_ckch[0], onvalue=1, command=channelchg).grid(column=0,row=1)
 Checkbutton(chanctr,text='CH2',variable=v_ckch[1], onvalue=2, command=channelchg).grid(column=1,row=1)
 Checkbutton(chanctr,text='CH3',variable=v_ckch[2], onvalue=4, command=channelchg).grid(column=2,row=1)
@@ -675,21 +693,26 @@ def plotlimit(e=None):
     limext=float(e)
     v_limit.config(text='y_ext %0.2f'%(limext))
 
-Checkbutton(axisctr,text='Filter',variable=v_filt,width=8).grid(row=0,column=0, padx=10,sticky='w')
+Checkbutton(axisctr,text='Filter',variable=v_filt,width=16).grid(row=0,column=0, padx=10,sticky='w')
 Checkbutton(axisctr,text='Buffered',variable=v_buff,state='disabled').grid(row=0,column=1,sticky='e',padx=10)
 v_ndata=Label(axisctr,text='#data %d'%(ndata),width=10)
 v_ndata.grid(row=1,column=0,padx=10, sticky='w')
 v_limit=Label(axisctr,text='y_ext 0',width=10)
 v_limit.grid(row=2,column=0,padx=10, sticky='w')
 
-Scale(axisctr, length=100, from_=10, to=200, value=ndata, command=ndatachg).grid(row=1,column=1)
-Scale(axisctr, length=100, from_=0, to=0.2, value=0, command=plotlimit).grid(row=2,column=1)
+Scale(axisctr, length=200, from_=10, to=200, value=ndata, command=ndatachg).grid(row=1,column=1,pady=pady)
+Scale(axisctr, length=200, from_=0, to=0.2, value=0, command=plotlimit).grid(row=2,column=1, pady=pady)
 
-Button(ctrarea,text='OK',style='ok.TButton',command=okctr).place(x=235,y=170,width=30,height=30)
-Button(ctrarea,text='X',style='off.TButton',command=destroyme).place(x=270,y=170,width=30,height=30)
+Button(ctrarea,text='OK',style='ok.TButton',command=okctr).place(x=WSCREEN-270,y=HSCREEN-100,width=30,height=30)
+Button(ctrarea,text='X',style='off.TButton',command=destroyme).place(x=WSCREEN-200,y=HSCREEN-100,width=30,height=30)
 
 
-######### SETTINGS AREA ###########
+####################################################################
+########### SETTINGS AREA ##########################################
+####################################################################
+
+setframe=Frame(setarea)
+setframe.pack(pady=2*pady)
 
 def setdt(e=None):
     v_dt.config(text='delta %4d'%(int(float(e))))
@@ -701,21 +724,25 @@ def setapply(e=None):
     print(deviceCommand('dt %d'%(int(float(s_dt.get())))))
     print(deviceCommand('avg %d'%(int(float(s_av.get())))))
 
-v_dt=Label(setarea,text='delta   0', width=12, anchor='w')
-v_av=Label(setarea,text='average  10', width=12, anchor='w')
-s_dt=Scale(setarea, length=100, from_=0, to=100, value=0, command=setdt)
-s_av=Scale(setarea, length=100, from_=0, to=20, value=10, command=setav)
+v_dt=Label(setframe,text='delta   0', width=12, anchor='w')
+v_av=Label(setframe,text='average  10', width=12, anchor='w')
+s_dt=Scale(setframe, length=slen, from_=0, to=100, value=0, command=setdt)
+s_av=Scale(setframe, length=slen, from_=0, to=20, value=10, command=setav)
 
-v_dt.grid(row=0,column=0)
-s_dt.grid(row=0,column=1)
-v_av.grid(row=1,column=0)
-s_av.grid(row=1,column=1)
+v_dt.grid(row=0,column=0, pady=pady)
+s_dt.grid(row=0,column=1, pady=pady)
+v_av.grid(row=1,column=0, pady=pady)
+s_av.grid(row=1,column=1, pady=pady)
 
-Button(setarea,text='Apply',command=setapply).grid(row=2,column=0,columnspan=2,pady=20)
+Button(setframe,text='Apply',command=setapply).grid(row=2,column=0,columnspan=2,pady=20)
 
 
+####################################################################
+############ COMMAND AREA ##########################################
+####################################################################
 
-###### COMMAND AREA #######
+cmdframe=Frame(cmdarea)
+cmdframe.pack(pady=2*pady)
 
 def dosend(e=None):
     s=deviceCommand(cmdstring.get())
@@ -725,9 +752,9 @@ def dosend(e=None):
 cmdstring=StringVar(mw)
 respstring=StringVar(mw)
 
-cmdbox=Entry(cmdarea,textvariable=cmdstring)
-sendbutt=Button(cmdarea,text='send',command=dosend)
-restext=Text(cmdarea,width=34,height=8)
+cmdbox=Entry(cmdframe,textvariable=cmdstring)
+sendbutt=Button(cmdframe,text='send',command=dosend)
+restext=Text(cmdframe,width=50,height=30)
 
 cmdbox.grid(column=0,row=0,padx=10,pady=5)
 sendbutt.grid(column=1,row=0,padx=10,pady=5)
@@ -752,7 +779,9 @@ def tabchanges(e):
 
 mw.bind('<<NotebookTabChanged>>', tabchanges)
 
-###### MAIN PROGRAM ######
+####################################################################
+########### MAIN PROGRAM ###########################################
+####################################################################
 
 mw.geometry('{}x{}+{}+{}'.format(WSCREEN,HSCREEN,WOFFS,HOFFS))
 #mw.resizable(False,False)
