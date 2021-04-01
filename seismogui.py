@@ -541,7 +541,7 @@ for c in range(len(cvs)):
     cvs[c].bind('<Motion>', mousepos)
     cvs[c].bind('<Enter>', mouseenter)
     cvs[c].bind('<Leave>', mouseleave)
-    cvs[c].bind('<Button-1>', lambda event, chn=c: mousepick(event, chn))
+    cvs[c].bind('<Double-Button-1>', lambda event, chn=c: mousepick(event, chn))
 #    cvs[c].bind('<Double-Button-1>', lambda event, chn=c: mousezoom(event, chn))
 
 #### BUTTONS ####
