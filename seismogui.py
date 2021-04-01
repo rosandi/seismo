@@ -523,6 +523,9 @@ def mouseleave(e):
 def mousepick(e,c):
     ww=int(e.widget['width'])
     pickbox.insert(INSERT,'%d %0.3f\n'%(c, x*e.x/ww))
+
+#def mousezoom(e,c):
+#    print('double click on ',c)
     
 for c in range(nchannel):
     cvs[c]=Canvas(plotarea, width=WCVS, height=(HCVS-20)/nchannel, bg='white')
@@ -539,6 +542,7 @@ for c in range(len(cvs)):
     cvs[c].bind('<Enter>', mouseenter)
     cvs[c].bind('<Leave>', mouseleave)
     cvs[c].bind('<Button-1>', lambda event, chn=c: mousepick(event, chn))
+#    cvs[c].bind('<Double-Button-1>', lambda event, chn=c: mousezoom(event, chn))
 
 #### BUTTONS ####
 
