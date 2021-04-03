@@ -114,7 +114,7 @@ progress=welcvs.create_rectangle(20,200,150,220,fill='blue')
 welcome.update()
 
 running=False
-ndata=50
+ndata=200
 minofs=-0.2
 maxofs=0.2
 mingain=0
@@ -149,7 +149,7 @@ def getdevdata(e=None):
     # time in uSec -> convert to mSec
     # x=np.linspace(0,msrtime/1000.0,ndat)
     
-    x=msrtime
+    x=msrtime/nchan
     
     for i in chlist:
         y[i]=np.zeros(ndat)
@@ -169,22 +169,13 @@ def trigdevdata(e=None):
     else:
         msrtime,vals,cmask=directMeasure(ndata)
     
-    # channel!
-    chlist=[]
-    nchan=0
-    i=0
-
-    for m in (1,2,4,8,16,32):
-        if cmask & m:
-            chlist.append(i)
-            nchan+=1
-        i+=1
-    
+    nchan,chlist=channelnum(cmask,channel)        
     ndat=int(len(vals)/nchan)
 
     # time in uSec -> convert to mSec
     # x=np.linspace(0,msrtime/1000.0,ndat)
     x=msrtime
+    print(x)
     
     for i in chlist:
         y[i]=np.zeros(ndat)
@@ -225,20 +216,20 @@ def save():
     except:
         print('error writting file')
 
-def plot(cvs,data,xlim=(0,100),ylim=(-0.55,0.55),color='black'):
+
+####### PLOT PROCEDURE #######
+
+def plot(cvs,data,color='black'):
     hh=int(cvs.cget('height'))
     ww=int(cvs.cget('width'))
-    
-    scy=hh/(ylim[1]-ylim[0])
-    mid=scy*(ylim[1]-ylim[0])/2
-    
-    scx=ww/(xlim[1]-xlim[0])
+    mid=hh/2    
     x=np.linspace(0,ww,len(data))
+
     line=[]
 
     for a,b in zip(x,data):
         line.append(a)
-        line.append(hh-(b-ylim[0])*scy)
+        line.append(mid-b)
         
     cvs.create_line(line, fill=color, width=2)
 
@@ -251,32 +242,25 @@ def updateplot(e=None):
     
     if filtexist and v_filt.get():
         for i in chlist:
-            yplot[i]=sg.filtfilt(butta, buttb, (baseoffset[i]+y[i])*chgain[i]+choffset[i])
+            yplot[i]=sg.filtfilt(butta, buttb, y[i]*chgain[i])
             mmi=min(yplot[i])
             mma=max(yplot[i])
             mi = mmi if (mi>mmi) else mi
             ma = mma if (ma<mma) else ma
     else:
         for i in chlist:
-            yplot[i]=(baseoffset[i]+y[i])*chgain[i]+choffset[i]
+            yplot[i]=y[i]*0.1
             mmi=np.amin(yplot[i])
             mma=np.amax(yplot[i])
             mi = mmi if (mi>mmi) else mi
             ma = mma if (ma<mma) else ma
-    
-    ylim=(-.1,.1)
-    if mi<-0.1 or ma>0.1:
-        if ma - mi < 0.2:
-            ylim=(mi-0.1,ma+0.1)
-        else:
-            ylim=(mi,ma)
-    
-    ylim=(ylim[0]-limext,ylim[1]+limext)
-        
+
     for i in chlist:
         cvs[i].delete(ALL)
-        plot(cvs[i],yplot[i],xlim=(0,x),ylim=ylim,color=chcolor[i])
+        plot(cvs[i],yplot[i],color=chcolor[i])
         cvs[i].create_text(20,10,text='ch%d'%(i+1), font=('Helvetica',10))
+    
+    thi['text']='%0.3f ms'%(x*1000)
 
 ##### CALLBACKS #####
 
@@ -504,7 +488,7 @@ def mousepos(e,c):
     global mouseln,x
     ww=int(e.widget['width'])
     hh=int(e.widget['height'])
-    pointpos['text']= 'ch(%d) %0.3f ms'%(c, x*e.x/ww)
+    pointpos['text']= 'ch(%d) %0.3f ms'%(c, 1000.0*x*e.x/ww)
     e.widget.coords(mouseln,e.x,0, e.x, hh)
 
 def mouseenter(e):
@@ -518,7 +502,7 @@ def mouseleave(e):
     
 def mousepick(e,c):
     ww=int(e.widget['width'])
-    pickbox.insert(INSERT,'%d %0.3f\n'%(c, x*e.x/ww))
+    pickbox.insert(INSERT,'%d %0.3f\n'%(c, 1000.0*x*e.x/ww))
 
 def btnpick():
     s=pointpos['text'].replace('ch(','').replace(')','').replace(' ms','\n')
@@ -704,7 +688,7 @@ v_ndata.grid(row=1,column=0,padx=10, sticky='w')
 v_limit=Label(axisctr,text='y_ext 0',width=10)
 v_limit.grid(row=2,column=0,padx=10, sticky='w')
 
-Scale(axisctr, length=200, from_=10, to=200, value=ndata, command=ndatachg).grid(row=1,column=1,pady=pady)
+Scale(axisctr, length=200, from_=10, to=1000, value=ndata, command=ndatachg).grid(row=1,column=1,pady=pady)
 Scale(axisctr, length=200, from_=0, to=0.2, value=0, command=plotlimit).grid(row=2,column=1, pady=pady)
 
 Button(ctrarea,text='OK',style='ok.TButton',command=okctr).place(x=WSCREEN-270,y=HSCREEN-100,width=30,height=30)

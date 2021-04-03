@@ -5,7 +5,7 @@ import Adafruit_ADS1x15
 from gpiozero import Button
 
 chn=1 # channel mask! not number
-gain=1
+gain=16
 devchan=4
 adc=None
 trigpin=None
@@ -73,8 +73,8 @@ def deviceCommand(scmd):
     else:
         return "ADS1x15 interface"
     
-def directMeasure():
-    return readadc(1)
+def directMeasure(n=1):
+    return readadc(n)
     
 def clearQueue():
     pass
