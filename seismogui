@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec python3 seismogui.py comm=ADS1115 channels=4 size=1016x594

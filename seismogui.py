@@ -9,8 +9,8 @@
 # -> run on desktop: desktop or size=WIDTHxHEIGHT
 #
 
-WSCREEN=1024
-HSCREEN=600
+WSCREEN=1016
+HSCREEN=594
 WOFFS=0
 HOFFS=0
 
@@ -39,7 +39,7 @@ progress=welcvs.create_rectangle(20,200,50,220,fill='blue')
 welcome.update()
 ###########################################
 
-comm='/dev/ttyACM0'
+comm='null'  # for arduino: '/dev/ttyACM0'
 speed=115200
 datadir='./data'
 nchannel=6
@@ -57,9 +57,6 @@ for arg in sys.argv:
     if arg.find('offset=') == 0:
         WOFFS=int(arg.replace('offset=','').replace('+',' ').split()[0])
         HOFFS=int(arg.replace('offset=','').replace('+',' ').split()[1])
-    if arg.find('desktop') == 0:
-        WSCREEN=800
-        HSCREEN=600
     if arg.find('data=') == 0:
         datadir=arg.replace('data=','')
     if arg.find('channels=') == 0:
@@ -83,16 +80,24 @@ progress=welcvs.create_rectangle(20,200,100,220,fill='blue')
 welcome.update()
 
 if comm=='null':
-    from seismoserial_dummy import deviceInit,deviceClose,deviceCommand,directMeasure,clearQueue
-    from seismoserial import channelnum
+    from seismodummy import deviceInit,deviceClose,deviceCommand
+    from seismodummy import directMeasure,clearQueue
+    from seismodummy import channelnum
 else:
     try:
-        from seismoserial import deviceInit,deviceClose,deviceCommand,directMeasure,clearQueue
-        from seismoserial import channelnum
+        if comm.find('ADS') == 0:
+            from seismoads import deviceInit,deviceClose,deviceCommand
+            from seismoads import directMeasure,clearQueue
+            from seismoads import channelnum
+        else:
+            from seismoserial import deviceInit,deviceClose,deviceCommand
+            from seismoserial import directMeasure,clearQueue
+            from seismoserial import channelnum
     except:
-        print('Can not find seismo device. Using dummy device')
-        from seismoserial_dummy import deviceInit,deviceClose,deviceCommand,directMeasure,clearQueue
-        from seismoserial_dummy import channelnum
+        print('Can not find seismo device. Fall back to dummy device')
+        from seismodummy import deviceInit,deviceClose,deviceCommand
+        from seismodummy import directMeasure,clearQueue
+        from seismodummy import channelnum
 
 filtstrength=0.25
 

@@ -14,13 +14,16 @@ def channelnum(cmask,nchannel=None):
     maxc=devchan
     if nchannel:
         maxc=nchannel
-    chlst=[]
+    chlst=[] # array index list! not mask!
     nch=0
+    li=0 # list index
     for m in range(maxc):
         pm=2**m
         if cmask & pm:
-            chlst.append(pm)
+            chlst.append(li)
             nch+=1
+        li+=1
+
     return nch,chlst
 
 def deviceInit(port='ADS1115',speed=None):
@@ -30,13 +33,13 @@ def deviceInit(port='ADS1115',speed=None):
     
     if port is 'ADS1115':
         adc = Adafruit_ADS1x15.ADS1115()
-    else
+    else:
         adc = Adafruit_ADS1x15.ADS1015()
     
 
 def readadc(n):
     global chn,gain
-    cl=chanlist(chn)
+    _,cl=channelnum(chn)
     vals=[]
     tstart=time.time()
     for i in range(n):
@@ -44,7 +47,7 @@ def readadc(n):
             vals.append(adc.read_adc(ch,gain))
     tend=time.time()
     
-    return tend-tstart,cl
+    return tend-tstart,vals
 
 def deviceCommand(scmd):
     global chn
@@ -53,19 +56,20 @@ def deviceCommand(scmd):
     
     if scmd.find('msr')==0:
         ndata=int(scmd.split()[1])
-        dt,vals=readadc(nchan)
+        dt,vals=readadc(ndata)
+        #print('DEBUG:',vals)
         return dt, vals, chn
 
     elif scmd.find('trig')==0:
         # WARNING: blocking!
         trigpin.wait_for_press()
-        dt,vals=readadc(nchan)
+        dt,vals=readadc(ndata)
         return dt, vals, chn
         
     elif scmd.find('chn')==0:
         chn=int(scmd.split()[1])
-        nchan=channelnum(chn)
-        return "channel mask: {} number {}".format(chn,chan)
+        nchan,_=channelnum(chn)
+        return "channel mask: {} number {}".format(chn,nchan)
     else:
         return "ADS1x15 interface"
     
