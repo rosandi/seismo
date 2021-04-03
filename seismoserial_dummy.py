@@ -3,6 +3,7 @@ from random import random
 from math import pi,sin,exp
 
 chn=1
+devchan=6
 
 def createsignal(nch):
     nd=500
@@ -16,12 +17,21 @@ def createsignal(nch):
             v.append(sin(a)*exp(-(0.001*(i-th)**2)))
     return v
 
-def channelnum(cmask):
-    nchan=0
-    for m in (1,2,4,8,16,32):
-        if cmask & m:
-            nchan+=1
-    return nchan
+def channelnum(cmask,nchannel=None):
+    maxc=devchan
+    if nchannel:
+        maxc=nchannel
+    chlst=[] # array index list! not mask!
+    nch=0
+    li=0 # list index
+    for m in range(maxc):
+        pm=2**m
+        if cmask & pm:
+            chlst.append(li)
+            nch+=1
+        li+=1
+
+    return nch,chlst
 
 def deviceInit(port,speed):
     pass
@@ -32,7 +42,7 @@ def deviceClose():
 def deviceCommand(scmd):
     global chn
     
-    nchan=channelnum(chn)
+    nchan,chlist=channelnum(chn)
     
     if scmd.find('msr')==0:
         return 1000, createsignal(nchan), chn

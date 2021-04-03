@@ -42,6 +42,7 @@ welcome.update()
 comm='/dev/ttyACM0'
 speed=115200
 datadir='./data'
+nchannel=6
 
 ################### COMMAND LINE ARGUMENTS ############################
 
@@ -61,6 +62,8 @@ for arg in sys.argv:
         HSCREEN=600
     if arg.find('data=') == 0:
         datadir=arg.replace('data=','')
+    if arg.find('channels=') == 0:
+        nchannel=int(arg.replace('channels=',''))
 		
 ##########################################################################
 
@@ -79,16 +82,17 @@ welcvs.delete(progress)
 progress=welcvs.create_rectangle(20,200,100,220,fill='blue')
 welcome.update()
 
-
 if comm=='null':
     from seismoserial_dummy import deviceInit,deviceClose,deviceCommand,directMeasure,clearQueue
+    from seismoserial import channelnum
 else:
     try:
         from seismoserial import deviceInit,deviceClose,deviceCommand,directMeasure,clearQueue
+        from seismoserial import channelnum
     except:
         print('Can not find seismo device. Using dummy device')
         from seismoserial_dummy import deviceInit,deviceClose,deviceCommand,directMeasure,clearQueue
-
+        from seismoserial_dummy import channelnum
 
 filtstrength=0.25
 
@@ -114,7 +118,6 @@ chandirty=True
 limext=0.0
 datadir="./data"
 loc=(-6.914864, 107.608238)
-nchannel=6
 
 # allocate for 6 channels
 chlist=[1]
@@ -126,13 +129,6 @@ chcolor=['SteelBlue3','chartreuse2','firebrick3','DarkOrchid1','dark green','mar
 y=[None]*nchannel
 x=None
 
-for arg in sys.argv:
-    if arg.find('com=') == 0:
-        comm=arg.replace('com=','')
-    if arg.find('speed=') == 0:
-        speed=int(arg.replace('speed=',''))
-    if arg.find('verbose') == 0:
-        verbose=True
 
 def getdevdata(e=None):
     global running, x, y, chlist
@@ -142,19 +138,9 @@ def getdevdata(e=None):
     else:
         msrtime,vals,cmask=directMeasure(ndata)
     
-    # channel!
-    chlist=[]
-    nchan=0
-    i=0
-
-    for m in (1,2,4,8,16,32):
-        if cmask & m:
-            chlist.append(i)
-            nchan+=1
-        i+=1
-    
+    nchan,chlist=channelnum(cmask,nchannel)
     ndat=int(len(vals)/nchan)
-
+    
     # time in uSec -> convert to mSec
     # x=np.linspace(0,msrtime/1000.0,ndat)
     
@@ -253,7 +239,7 @@ def plot(cvs,data,xlim=(0,100),ylim=(-0.55,0.55),color='black'):
 
 def updateplot(e=None):
 
-    yplot=[None]*6
+    yplot=[None]*nchannel
     
     mi=1e6
     ma=-1e6
@@ -353,7 +339,12 @@ def initialize():
     print("initialization....")
     print(deviceCommand("dt 1"))
     print(deviceCommand("avg 10"))
-    print(deviceCommand("chn {}".format(1+2+4+8+16+32)))
+    
+    m=0
+    for c in range(nchannel):
+       m+=2**c
+    
+    print(deviceCommand("chn {}".format(m)))
 
 
 ### initialization

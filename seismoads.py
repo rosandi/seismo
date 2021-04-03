@@ -10,29 +10,18 @@ devchan=4
 adc=None
 trigpin=None
 
-def channelnum(cmask=None):
-    # returns device maximum channel
-    if cmask is None:
-        return devchan
-    
-    # or translate cmask to number of channels
-    nchan=0
-    for m in (1,2,4,8,16,32):
-        if cmask & m:
-            nchan+=1
-    if nchan > devchan:
-        nchan=devchan
-    return nchan
-
-def chanlist(cmask):
+def channelnum(cmask,nchannel=None):
+    maxc=devchan
+    if nchannel:
+        maxc=nchannel
     chlst=[]
-    c=0
-    for m in (1,2,4,8,16,32,64,128):
-        if cmask & m:
-            chlst.append(c)
-        c+=1
-   
-   return chlst
+    nch=0
+    for m in range(maxc):
+        pm=2**m
+        if cmask & pm:
+            chlst.append(pm)
+            nch+=1
+    return nch,chlst
 
 def deviceInit(port='ADS1115',speed=None):
     global adc,trigpin
@@ -60,7 +49,7 @@ def readadc(n):
 def deviceCommand(scmd):
     global chn
     
-    nchan=channelnum(chn)
+    nchan,chlist=channelnum(chn)
     
     if scmd.find('msr')==0:
         ndata=int(scmd.split()[1])
