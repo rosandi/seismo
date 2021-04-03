@@ -4,7 +4,7 @@ import time
 import Adafruit_ADS1x15
 from gpiozero import Button
 
-chn=1 # channel mask! not number
+chn=15 # channel mask! not number
 gain=16
 devchan=4
 adc=None
@@ -44,7 +44,9 @@ def readadc(n):
     tstart=time.time()
     for i in range(n):
         for ch in cl:
-            vals.append(adc.read_adc(ch,gain))
+            vals.append(adc.read_adc(ch,gain=gain))
+            time.sleep(0.01)
+            
     tend=time.time()
     
     return tend-tstart,vals
