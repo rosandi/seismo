@@ -114,7 +114,7 @@ progress=welcvs.create_rectangle(20,200,150,220,fill='blue')
 welcome.update()
 
 running=False
-ndata=20
+ndata=100
 minofs=-0.2
 maxofs=0.2
 mingain=0
@@ -140,13 +140,9 @@ def getdevdata(e=None):
     msrtime,vals=directMeasure(ndata)
     nchan,chlist=channelnum()
     ndat=int(len(vals)/nchan)
-    
+            
     x=msrtime/nchan
     y=np.array(vals).reshape((nchan,ndat),order='F')
-    for i in range(20):
-        print(y[0,i],y[1,i],y[2,i])
-
-
 
 def trigdevdata(e=None):
     global running, x, y, chlist
@@ -205,12 +201,11 @@ def plot(cvs,data,color='black'):
     cvs.create_line(line, fill=color, width=2)
 
 def updateplot(e=None):
-
-    yplot=[None]*nchannel
     
     mi=1e6
     ma=-1e6
-    #print(chlist)
+    
+    yplot=np.array(y)
     
     if filtexist and v_filt.get():
         for i in chlist:
@@ -221,7 +216,6 @@ def updateplot(e=None):
             ma = mma if (ma<mma) else ma
     else:
         for i in chlist:
-            yplot[i]=y[i]*0.1
             mmi=np.amin(yplot[i])
             mma=np.amax(yplot[i])
             mi = mmi if (mi>mmi) else mi
@@ -229,7 +223,7 @@ def updateplot(e=None):
 
     for i in chlist:
         cvs[i].delete(ALL)
-        plot(cvs[i],yplot[i],color=chcolor[i])
+        plot(cvs[i],yplot[i]*0.001,color=chcolor[i])
         cvs[i].create_text(20,10,text='ch%d'%(i+1), font=('Helvetica',10))
     
     thi['text']='%0.3f ms'%(x*1000)
@@ -297,6 +291,16 @@ def channelchg(e=None):
 
 def initialize():
     deviceInit(comm,speed)
+#    deviceInit()
+
+#    while True:
+#        _,d=directMeasure(20)
+#        d=np.array(d).reshape((4,20),order='F')
+#        for i in range(20):
+#            print('{0:>6} {1:>6} {2:>6} '.format(d[0,i],d[1,i],d[2,i]))
+    
+#    exit()
+    
     print("initialization....")
     print(deviceCommand("dt 1"))
     print(deviceCommand("avg 10"))

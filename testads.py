@@ -8,9 +8,9 @@ while True:
     _,d=sa.directMeasure(20)
     d=np.array(d).reshape((4,20),order='F')
     for i in range(20):
-        print(d[0,i],d[1,i],d[2,i])
+        print('{0:>6} {1:>6} {2:>6} '.format(d[0,i],d[1,i],d[2,i]))
         
-    break
+#    break
     #d=np.reshape(d,(4,10),order='F')
     #print('{0:>6} : {1:>6} : {2:>6} : {3:>6}'.format(*d))
     #x=np.linspace(0,10,10)

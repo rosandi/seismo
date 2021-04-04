@@ -34,11 +34,13 @@ def deviceInit(port='ADS1115',speed=None):
     
     trigpin=Button(4)
     
-    if port is 'ADS1115':
+    if port == 'ADS1115':
         adc = Adafruit_ADS1x15.ADS1115()
-    else:
+    elif port == 'ADS1015':
         adc = Adafruit_ADS1x15.ADS1015()
-    
+    else:
+        print('unknown device: {}'.format(port))
+        exit()
 
 def readadc(n=1,channels=None, delay=0.0):
     global gain
@@ -51,7 +53,7 @@ def readadc(n=1,channels=None, delay=0.0):
             time.sleep(delay)
             
     tend=time.time()
-    print(vals)
+
     return tend-tstart,vals
 
 def deviceCommand(scmd):
