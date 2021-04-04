@@ -1,0 +1,8 @@
+#!/bin/bash
+
+while [true]; do
+  diskuse=$(df | awk '/^\/dev\/root/{print $5}' | sed 's/%//')
+  [[ $diskuse -gt 80 ]] && exit
+  fname=$(date +'%Y%m%d%H%M%S').txt
+  ./logads.py block=4096 > fname
+done
