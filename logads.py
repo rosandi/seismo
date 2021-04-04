@@ -17,7 +17,7 @@ for arg in sys.argv:
     if arg.find('block=') == 0:
         blocklen=int(arg.replace('block=',''))
         print('block length: %d'%(blocklen), file=sys.stderr)
-    if arg.fing('N=') == 0:
+    if arg.find('N=') == 0:
         nb=int(arg.replace('N=',''))
 
 sa.deviceInit()
