@@ -1,20 +1,38 @@
+#!/usr/bin/python3
+
 from time import sleep
+import sys
 import signal as sg
 import seismoads as sa
 import numpy as np
 
 sa.deviceInit()
-blockln=1024
-run=True
 
-def termhandle():
-    global run
+blocklen=1024
+run=True
+nkill=0
+bcnt=0
+
+def termhandle(num,frm):
+    global run,nkill
+    if nkill > 0:
+        print('Brutally killed.', file=sys.stderr)
+        exit()
+    else:
+        print('Signal recieved..', file=sys.stderr)
+        nkill+=1
     run=False
 
+sg.signal(sg.SIGINT, termhandle)
+
 while run:
+
+    bcnt+=1
+    print('reading block %d'%(bcnt),file=sys.stderr)
+
     t,d=sa.directMeasure(blocklen)
     d=np.array(d).reshape((4,blocklen),order='F')
-
     print('# %0.10f'%(t))
     for i in range(blocklen):
         print('{0} {1:>6} {2:>6} {3:>6} '.format(i,d[0,i],d[1,i],d[2,i]))
+    
