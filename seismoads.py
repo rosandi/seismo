@@ -10,8 +10,11 @@ devchan=4
 adc=None
 trigpin=None
 
-def channelnum(cmask,nchannel=None):
+def channelnum(cmask=None,nchannel=None):
+    global chn
     maxc=devchan
+    if cmask is None:
+        cmask=chn
     if nchannel:
         maxc=nchannel
     chlst=[] # array index list! not mask!
@@ -37,18 +40,18 @@ def deviceInit(port='ADS1115',speed=None):
         adc = Adafruit_ADS1x15.ADS1015()
     
 
-def readadc(n):
-    global chn,gain
-    _,cl=channelnum(chn)
+def readadc(n=1,channels=None, delay=0.0):
+    global gain
+    _,cl=channelnum(channels)
     vals=[]
     tstart=time.time()
     for i in range(n):
         for ch in cl:
             vals.append(adc.read_adc(ch,gain=gain))
-            time.sleep(0.01)
+            time.sleep(delay)
             
     tend=time.time()
-    
+    print(vals)
     return tend-tstart,vals
 
 def deviceCommand(scmd):

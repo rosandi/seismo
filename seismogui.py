@@ -42,7 +42,7 @@ welcome.update()
 comm='null'  # for arduino: '/dev/ttyACM0'
 speed=115200
 datadir='./data'
-nchannel=6
+nchannel=4
 
 ################### COMMAND LINE ARGUMENTS ############################
 
@@ -114,7 +114,7 @@ progress=welcvs.create_rectangle(20,200,150,220,fill='blue')
 welcome.update()
 
 running=False
-ndata=200
+ndata=20
 minofs=-0.2
 maxofs=0.2
 mingain=0
@@ -131,60 +131,31 @@ baseoffset=[0.0]*nchannel
 chgain=[1.0]*nchannel
 cvs=[None]*nchannel
 chcolor=['SteelBlue3','chartreuse2','firebrick3','DarkOrchid1','dark green','maroon']*2
-y=[None]*nchannel
+y=None
 x=None
 
 
 def getdevdata(e=None):
     global running, x, y, chlist
-    
-    if v_buff.get():
-        msrtime,vals,cmask = deviceCommand('msr '+str(ndata))
-    else:
-        msrtime,vals,cmask=directMeasure(ndata)
-    
-    nchan,chlist=channelnum(cmask,nchannel)
+    msrtime,vals=directMeasure(ndata)
+    nchan,chlist=channelnum()
     ndat=int(len(vals)/nchan)
     
-    # time in uSec -> convert to mSec
-    # x=np.linspace(0,msrtime/1000.0,ndat)
-    
     x=msrtime/nchan
-    
-    for i in chlist:
-        y[i]=np.zeros(ndat)
+    y=np.array(vals).reshape((nchan,ndat),order='F')
+    for i in range(20):
+        print(y[0,i],y[1,i],y[2,i])
 
-    i=0
-    for a in range(0,ndat):
-        for b in chlist:
-            y[b][a]=vals[i]
-            i+=1
 
 
 def trigdevdata(e=None):
     global running, x, y, chlist
-    
-    if v_buff.get():
-        msrtime,vals,cmask = deviceCommand('trig '+str(ndata))
-    else:
-        msrtime,vals,cmask=directMeasure(ndata)
-    
-    nchan,chlist=channelnum(cmask,channel)        
+    msrtime,vals=directMeasure(ndata)
+    nchan,chlist=channelnum()        
     ndat=int(len(vals)/nchan)
 
-    # time in uSec -> convert to mSec
-    # x=np.linspace(0,msrtime/1000.0,ndat)
     x=msrtime
-    print(x)
-    
-    for i in chlist:
-        y[i]=np.zeros(ndat)
-
-    i=0
-    for a in range(0,ndat):
-        for b in chlist:
-            y[b][a]=vals[i]
-            i+=1
+    y=np.array(vals).reshape((nchan,ndat),order='F')
             
 def save():
     now=datetime.datetime.now()
@@ -239,6 +210,7 @@ def updateplot(e=None):
     
     mi=1e6
     ma=-1e6
+    #print(chlist)
     
     if filtexist and v_filt.get():
         for i in chlist:
